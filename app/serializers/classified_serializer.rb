@@ -1,3 +1,4 @@
 class ClassifiedSerializer < ActiveModel::Serializer
-  attributes :id, :user_id, :title, :price, :description
+  attributes :id, :title, :price, :description
+  belongs_to :user
 end

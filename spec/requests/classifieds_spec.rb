@@ -30,10 +30,13 @@ RSpec.describe "Classifieds", type: :request do
       it 'is correctly serialized' do
         expect(parsed_body).to match({
           id: classified.id,
-          user_id: classified.user_id,
           title: classified.title,
           price: classified.price,
-          description: classified.description
+          description: classified.description,
+          user: {
+            id: classified.user_id,
+            fullname: classified.user.fullname
+          }.stringify_keys
         }.stringify_keys)
       end
     end
