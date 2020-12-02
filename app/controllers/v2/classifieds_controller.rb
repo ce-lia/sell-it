@@ -4,7 +4,10 @@ class V2::ClassifiedsController < V1::ClassifiedsController
       render json: { error: "missing parameter #{param_sym.to_s}"}, status: :bad_request and return unless params[param_sym]
     end
     render json: { error: 'order parameter must be asc or desc'}, status: :bad_request and return unless params[:order] == 'asc' || params[:order] == 'desc'
-    paginate json: Classified.all.order(created_at: params[:order]), status: :partial_content
+    scope = Classified.where(category: params[:category]) if params[:category]
+    scope ||= Classified.all
+    scope = scope.where('title like ?', "%#{params[:q]}%") if params[:q]
+    paginate json: scope.order(created_at: params[:order]), status: :partial_content
   end
 
   def update
