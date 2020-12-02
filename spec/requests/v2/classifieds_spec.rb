@@ -4,28 +4,56 @@ RSpec.describe "Classifieds", type: :request do
   let(:classified) {FactoryBot.create :classified, user_id: current_user.id}
 
   describe 'GET :classifieds' do
-    context 'when everything is going well' do
       let(:page) {3}
       let(:per_page) {5}
+    context 'when everything is going well' do
       before {
         FactoryBot.create_list :classified, 18
-        get '/v2/classifieds', params: { page: page, per_page: per_page}
+
       }
 
       it 'works' do
+        get '/v2/classifieds', params: { page: page, per_page: per_page, order: 'asc'}
         expect(response).to have_http_status :partial_content
       end
 
-      it 'returns paginated results' do
-        expect(parsed_body.map { |c| c['id'] }).to eq Classified.all.limit(per_page).offset((page - 1) * per_page).pluck(:id)
+      it 'returns paginated results when order is asc' do
+        get '/v2/classifieds', params: { page: page, per_page: per_page, order: 'asc'}
+        expect(parsed_body.map { |c| c['id'] }).to eq Classified.order(created_at: :asc).limit(per_page).offset((page - 1) * per_page).pluck(:id)
+      end
+
+      it 'returns paginated results when order is desc' do
+        get '/v2/classifieds', params: { page: page, per_page: per_page, order: 'desc'}
+        expect(parsed_body.map { |c| c['id'] }).to eq Classified.order(created_at: :desc).limit(per_page).offset((page - 1) * per_page).pluck(:id)
       end
     end
 
-    it 'returns a bad request when paramaters are missing' do
-      get '/v2/classifieds'
+    it 'returns a bad request when page paramater is missing' do
+      get '/v2/classifieds', params: {per_page: per_page, order: 'asc'}
       expect(response).to have_http_status :bad_request
       expect(parsed_body.keys).to include 'error'
-      expect(parsed_body['error']).to eq 'missing parameters'
+      expect(parsed_body['error']).to eq 'missing parameter page'
+    end
+
+    it 'returns a bad request when per_page paramater is missing' do
+      get '/v2/classifieds', params: {page: page, order: 'asc'}
+      expect(response).to have_http_status :bad_request
+      expect(parsed_body.keys).to include 'error'
+      expect(parsed_body['error']).to eq 'missing parameter per_page'
+    end
+
+    it 'returns a bad request when order paramater is missing' do
+      get '/v2/classifieds', params: {page: page, per_page: per_page}
+      expect(response).to have_http_status :bad_request
+      expect(parsed_body.keys).to include 'error'
+      expect(parsed_body['error']).to eq 'missing parameter order'
+    end
+
+    it 'returns a bad request when order paramater is incorrect' do
+      get '/v2/classifieds', params: {page: page, per_page: per_page, order: 'trotro'}
+      expect(response).to have_http_status :bad_request
+      expect(parsed_body.keys).to include 'error'
+      expect(parsed_body['error']).to eq 'order parameter must be asc or desc'
     end
   end
 
@@ -118,9 +146,8 @@ RSpec.describe "Classifieds", type: :request do
     end
 
     context 'when authenticated' do
-        before { patch "/v2/classifieds/#{classified.id}", params: params, headers: authentication_header }
-
-        it { expect(response).to have_http_status :forbidden }
+      before { patch "/v2/classifieds/#{classified.id}", params: params, headers: authentication_header }
+      it { expect(response).to have_http_status :forbidden }
     end
   end
 
